@@ -1,0 +1,65 @@
+# MT5 bridge container — headless MetaTrader 5 + rpyc server, reached by the
+# siliconmetatrader5 client (momq.mt5_connect backend="bridge").
+#
+# Primary service uses the maintained prebuilt image gmag11/metatrader5_vnc
+# (github.com/gmag11/MetaTrader5-Docker, ~550k pulls): KasmVNC web UI on :3000,
+# MT5 auto-installed under Wine on first boot, and an rpyc server (mt5linux)
+# on :8001 — the same rpyc-classic protocol the siliconmetatrader5 client uses.
+#
+# Start via the helper:   scripts/mt5_bridge.sh up
+# or directly:            docker compose -f docker/compose.mt5.yml up -d
+#
+# Apple Silicon: runs under Docker Desktop's amd64 emulation (platform pin
+# below). First boot installs MT5 inside the container — allow ~5-15 min.
+services:
+  mt5:
+    image: gmag11/metatrader5_vnc:2.3   # pinned; MT5 itself self-updates inside
+    container_name: momq-mt5-bridge
+    platform: linux/amd64               # x86_64-only image; emulated on Apple Silicon
+    restart: unless-stopped
+    ports:
+      # Bind localhost only — broker credentials get typed into this UI.
+      - "127.0.0.1:3000:3000"           # KasmVNC web UI (finish broker login here)
+      - "127.0.0.1:8001:8001"           # rpyc bridge (upstream convention)
+      - "127.0.0.1:18812:8001"          # same bridge on momq's default MT5_BRIDGE_PORT
+    environment:
+      - CUSTOM_USER=${MT5_VNC_USER:-trader}
+      - PASSWORD=${MT5_VNC_PASSWORD:-momq-local}
+    volumes:
+      # Persist Wine prefix + MT5 install + logged-in account across restarts.
+      - mt5_config:/config
+      # Our rpyc server as an s6-supervised service — the image's own [7/7]
+      # launcher is broken (mt5linux CLI drift + Wine python installer crash).
+      - ./mt5-rpyc-service.sh:/custom-services.d/mt5-rpyc:ro
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8001 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 600s               # first boot installs MT5 under emulation
+
+  # ---------------------------------------------------------------------------
+  # Fallback: self-built Wine image (Dockerfile.mt5 — STARTING TEMPLATE, not
+  # build-verified). Only if the prebuilt image stops working:
+  #   docker compose -f docker/compose.mt5.yml --profile build-template up mt5-template
+  # ---------------------------------------------------------------------------
+  mt5-template:
+    profiles: ["build-template"]
+    build:
+      context: .
+      dockerfile: Dockerfile.mt5
+    image: momq-mt5-bridge-template:latest
+    container_name: momq-mt5-bridge-template
+    platform: linux/amd64
+    ports:
+      - "127.0.0.1:18812:18812"
+      - "127.0.0.1:6081:6081"
+    environment:
+      - TZ=UTC
+      - MT5_RPYC_PORT=18812
+    volumes:
+      - mt5_config_template:/root/.wine/drive_c/users/root/AppData/Roaming/MetaQuotes
+
+volumes:
+  mt5_config:
+  mt5_config_template:

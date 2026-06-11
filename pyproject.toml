@@ -1,0 +1,79 @@
+[project]
+name = "mt5-mac-bridge"
+version = "0.1.0"
+description = "Use the MetaTrader 5 Python API from macOS and Linux via a Wine+rpyc bridge, with an offline mock and a native-Windows fallback."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Theau Heral", email = "theau.heral@gmail.com" }]
+keywords = ["metatrader", "metatrader5", "mt5", "trading", "macos", "apple-silicon", "wine", "rpyc", "forex"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Financial and Insurance Industry",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: Microsoft :: Windows",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Office/Business :: Financial :: Investment",
+]
+# Core install is dependency-light; pick a backend extra below.
+dependencies = []
+
+[project.optional-dependencies]
+# Bridge backend (macOS/Linux): rpyc client that talks to MT5-under-Wine.
+bridge = ["siliconmetatrader5>=1.2.3"]
+# Offline mock backend for unit-testing trading logic without a broker.
+mock = ["MMetaTrader5>=0.0.1"]
+# Native backend: the official package — Windows-only (marker keeps non-Windows
+# installs from failing to resolve it).
+native = ["MetaTrader5>=5.0.0; sys_platform == 'win32'"]
+# Everything usable on this machine (bridge + mock).
+all = ["siliconmetatrader5>=1.2.3", "MMetaTrader5>=0.0.1"]
+
+[project.urls]
+Homepage = "https://github.com/theauheral/mt5-mac-bridge"
+Repository = "https://github.com/theauheral/mt5-mac-bridge"
+Issues = "https://github.com/theauheral/mt5-mac-bridge/issues"
+Documentation = "https://github.com/theauheral/mt5-mac-bridge#readme"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+  "mypy>=1.10",
+  "MMetaTrader5>=0.0.1",
+  "ruff>=0.5",
+]
+
+[build-system]
+requires = ["hatchling>=1.15"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mt5_mac_bridge"]
+
+[tool.hatch.build.targets.sdist]
+# Ship the ops assets so users get the scripts/Docker config in the sdist too.
+include = ["src/mt5_mac_bridge", "scripts", "docker", "README.md", "LICENSE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = ["siliconmetatrader5.*", "MMetaTrader5.*", "MetaTrader5.*"]
+ignore_missing_imports = true

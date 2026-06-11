@@ -1,0 +1,18 @@
+# Build artifacts
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.py[cod]
+
+# Environments
+.venv/
+.env
+.env.*
+!.env.example
+
+# Tooling caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.DS_Store
