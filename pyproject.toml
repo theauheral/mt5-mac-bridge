@@ -1,6 +1,6 @@
 [project]
 name = "mt5-mac-bridge"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Use the MetaTrader 5 Python API from macOS and Linux via a Wine+rpyc bridge, with an offline mock and a native-Windows fallback."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -54,6 +54,10 @@ dev = [
 [build-system]
 requires = ["hatchling>=1.15"]
 build-backend = "hatchling.build"
+
+# Single source of truth for the version: __version__ in the package.
+[tool.hatch.version]
+path = "src/mt5_mac_bridge/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mt5_mac_bridge"]

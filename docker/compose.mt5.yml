@@ -38,28 +38,5 @@ services:
       retries: 10
       start_period: 600s               # first boot installs MT5 under emulation
 
-  # ---------------------------------------------------------------------------
-  # Fallback: self-built Wine image (Dockerfile.mt5 — STARTING TEMPLATE, not
-  # build-verified). Only if the prebuilt image stops working:
-  #   docker compose -f docker/compose.mt5.yml --profile build-template up mt5-template
-  # ---------------------------------------------------------------------------
-  mt5-template:
-    profiles: ["build-template"]
-    build:
-      context: .
-      dockerfile: Dockerfile.mt5
-    image: momq-mt5-bridge-template:latest
-    container_name: momq-mt5-bridge-template
-    platform: linux/amd64
-    ports:
-      - "127.0.0.1:18812:18812"
-      - "127.0.0.1:6081:6081"
-    environment:
-      - TZ=UTC
-      - MT5_RPYC_PORT=18812
-    volumes:
-      - mt5_config_template:/root/.wine/drive_c/users/root/AppData/Roaming/MetaQuotes
-
 volumes:
   mt5_config:
-  mt5_config_template:
